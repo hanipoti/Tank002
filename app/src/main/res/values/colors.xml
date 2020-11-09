@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#008577</color>
+    <color name="colorPrimaryDark">#00574B</color>
+    <color name="colorAccent">#D81B60</color>
+
+    <color name="radio_color">#ff2b00</color>
+    <color name="radio_center_color">#004cff</color>
+    <color name="radio_tap_color">#6affc800</color>
+    <color name="radio_white_color">#ffffff</color>
+</resources>
