@@ -39,6 +39,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private BufferedReader reader;
     private Timer timerSend;
 
+    static boolean nowCommunicating = false; //通信中か？
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,8 +63,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             public void run() {
                 TextView tvm = findViewById(R.id.textViewMessage);
                 if (tvm.getText().equals("通信中")) {
+                    nowCommunicating = true;
+
                     if (((RadioButton) findViewById(R.id.radioButtonOpeModeLR)).isChecked() || ((RadioButton) findViewById(R.id.radioButtonOpeModeUD)).isChecked()) {
-                        String s = "828";
+                        String s = "WM";
 
                         if (((RadioButton) findViewById(R.id.radioButtonOpeModeLR)).isChecked())
                             s = s + "E";
@@ -77,7 +81,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                         s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonR2Stop), (RadioButton) findViewById(R.id.radioButtonR2Extends), (RadioButton) findViewById(R.id.radioButtonR2Shrink));
                         s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonR3Stop), (RadioButton) findViewById(R.id.radioButtonR3Extends), (RadioButton) findViewById(R.id.radioButtonR3Shrink));
                         s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonR4Stop), (RadioButton) findViewById(R.id.radioButtonR4Extends), (RadioButton) findViewById(R.id.radioButtonR4Shrink));
-                        s = s + "9";
+
+                        //チェックsum計算
+                        int csum = 0;
+                        for (int i = 0; i < 8;i++){
+                            csum = csum + Integer.parseInt(s.substring(i + 3 ,i + 4));
+                        }
+                        s = s + Integer.toString(csum % 10); //１桁目だけを使用する
+
                         try {
                             writer.write(s);
                             writer.flush();
@@ -86,6 +97,17 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                             MessageBox("データ送信失敗");
                         }
                     }
+                }else if(nowCommunicating){  //通信中から切り替わったら停止命令を出す
+                    try {
+                        writer.write("WMS000000000");   //ストップ命令
+                        writer.flush();
+                        writer.write("WMS000000000");   //ストップ命令
+                        writer.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        MessageBox("データ送信失敗");
+                    }
+                    nowCommunicating = false;
                 }
             }
         }, 0, 50);
@@ -240,15 +262,15 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             case MotionEvent.ACTION_UP:
                 if (tvm.getText().equals("通信中")) {
                     MessageBox("接続中");
-                    try {
-                        writer.write("828S000000009");   //ストップ命令
-                        writer.flush();
-                        writer.write("828S000000009");   //ストップ命令
-                        writer.flush();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        MessageBox("データ送信失敗");
-                    }
+//                    try {
+//                        writer.write("828S");   //ストップ命令
+//                        writer.flush();
+//                        writer.write("828S");   //ストップ命令
+//                        writer.flush();
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                        MessageBox("データ送信失敗");
+//                    }
                 }
                 break;
         }
