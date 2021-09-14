@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Tank展開</string>
+    <string name="app_name">Tank砲塔制御</string>
 
     <string name="radioButtonExtends">伸び</string>
     <string name="radioButtonShrink">縮み</string>

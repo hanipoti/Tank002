@@ -1,4 +1,4 @@
-package com.wkwkmaker.tank001;
+package com.wkwkmaker.tank002;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

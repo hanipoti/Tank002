@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
     defaultConfig {
-        applicationId "com.wkwkmaker.tank001"
-        minSdkVersion 16
-        targetSdkVersion 28
+        applicationId "com.wkwkmaker.tank002"
+        minSdkVersion 28
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
