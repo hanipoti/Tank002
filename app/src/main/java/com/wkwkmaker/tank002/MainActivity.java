@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
@@ -14,7 +15,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.RadioButton;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
@@ -31,7 +31,7 @@ import java.util.UUID;
 
 
 //public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
-public class MainActivity extends AppCompatActivity  implements View.OnTouchListener {
+public class MainActivity extends AppCompatActivity {
 
     private BluetoothAdapter mBtAdapter; // BTアダプタ
     private BluetoothDevice mBtDevice; // BTデバイス
@@ -40,12 +40,17 @@ public class MainActivity extends AppCompatActivity  implements View.OnTouchList
     private BufferedReader reader;
     private Timer timerSend;
 
-    static boolean nowCommunicating = false; //通信中か？
-    static boolean nowJoysticking = false; //ジョイスティック操作中か？
-    static boolean nowShooting = false; //発射操作中か？
-    private int JoystickAreaTop = 0;
-    private int JoystickAreaLeft = 0;
-    private int JoystickAreaWidth = 0;
+    private boolean nowCommunicating = false; //通信中か？
+    private boolean nowJoysticking = false; //ジョイスティック操作中か？
+    private int nowJoystickingID = 0;
+    private boolean nowShooting = false; //発射操作中か？
+    private int nowShootingID = 0;
+    private TextView tvJoystickArea;
+    private TextView tvShootingArea;
+    private TextView tvMessage;
+
+    private float JoystickX = 0;
+    private float JoystickY = 0;
 
     private final StringBuffer info = new StringBuffer("Test onTouchEvent\n\n");
     private TextView textView;
@@ -56,158 +61,210 @@ public class MainActivity extends AppCompatActivity  implements View.OnTouchList
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textView = findViewById(R.id.textJoystickArea);
+        textView = findViewById(R.id.tvJoystickArea);
         textViewXY = findViewById(R.id.textView2);
 
         Button button = findViewById(R.id.button2);
-        button.setOnClickListener( v -> {
+        button.setOnClickListener(v -> {
             info.delete(0, info.length());
             textView.setText(info);
         });
 
+        tvJoystickArea = findViewById(R.id.tvJoystickArea);
+        tvShootingArea = findViewById(R.id.tvShootingArea);
+        tvMessage = findViewById(R.id.textViewMessage);
 
 
-
-
-
-        //プリファレンスから前回の接続先をセットする
-        SharedPreferences pref = getSharedPreferences("wkwk_TankTurret",MODE_PRIVATE);
+        //プリファレンスから前回のBluetooth接続先をセットする
+        SharedPreferences pref = getSharedPreferences("wkwk_TankTurret", MODE_PRIVATE);
         TextView tvc = findViewById(R.id.textViewConnectBTName);
-        tvc.setText(pref.getString("selectedBTName",""));
+        tvc.setText(pref.getString("selectedBTName", ""));
 
         timerSend = new Timer();
 
 //        Button btn = findViewById(R.id.button);
 //        btn.setOnTouchListener(this);
-        TextView tv = findViewById(R.id.textJoystickArea);
-        tv.setOnTouchListener(this);
+//        TextView tv = findViewById(R.id.tvJoystickArea);
+//        tv.setOnTouchListener(this);
 
 
         //タイマーに直接スケジュールを追加して実行
         timerSend.schedule(new TimerTask() {
             @Override
             public void run() {
-                TextView tvm = findViewById(R.id.textViewMessage);
-                if (tvm.getText().equals("通信中")) {
+                if (tvMessage.getText().equals("通信中")) {
                     nowCommunicating = true;
 
-//                    if (((RadioButton) findViewById(R.id.radioButtonOpeModeLR)).isChecked() || ((RadioButton) findViewById(R.id.radioButtonOpeModeUD)).isChecked()) {
-                        String s = "WM"; //WakuWakuMakerのWM
-                            s = s + "T"; //TurretのT
+                    String s = "WM"; //WakuWakuMakerのWM
+                    s = s + "T"; //TurretのT
 
-//                        s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonL1Stop), (RadioButton) findViewById(R.id.radioButtonL1Extends), (RadioButton) findViewById(R.id.radioButtonL1Shrink));
-//                        s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonL2Stop), (RadioButton) findViewById(R.id.radioButtonL2Extends), (RadioButton) findViewById(R.id.radioButtonL2Shrink));
-//                        s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonL3Stop), (RadioButton) findViewById(R.id.radioButtonL3Extends), (RadioButton) findViewById(R.id.radioButtonL3Shrink));
-//                        s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonL4Stop), (RadioButton) findViewById(R.id.radioButtonL4Extends), (RadioButton) findViewById(R.id.radioButtonL4Shrink));
-//                        s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonR1Stop), (RadioButton) findViewById(R.id.radioButtonR1Extends), (RadioButton) findViewById(R.id.radioButtonR1Shrink));
-//                        s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonR2Stop), (RadioButton) findViewById(R.id.radioButtonR2Extends), (RadioButton) findViewById(R.id.radioButtonR2Shrink));
-//                        s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonR3Stop), (RadioButton) findViewById(R.id.radioButtonR3Extends), (RadioButton) findViewById(R.id.radioButtonR3Shrink));
-//                        s = s + CheckedNo((RadioButton) findViewById(R.id.radioButtonR4Stop), (RadioButton) findViewById(R.id.radioButtonR4Extends), (RadioButton) findViewById(R.id.radioButtonR4Shrink));
+                    if (nowJoysticking) {
+                        Rect r = new Rect();
+                        tvJoystickArea.getGlobalVisibleRect(r);
 
-                        //チェックsum計算
-                        int csum = 0;
-                        for (int i = 0; i < 8;i++){
-                            csum = csum + Integer.parseInt(s.substring(i + 3 ,i + 4));
+                        //X
+                        float DX = r.right - r.left;
+                        float JX = JoystickX - r.left;
+                        if (JX < DX / 8){
+                            s = s + "L128";
+                        }else if(JX < DX / 8 * 3){
+                            s = s + String.format("L%03d",(int)(128 - (JX - (DX / 8)) / (DX / 4) * 128));
+                        }else if(JX < DX / 8 * 5){
+                            s = s + "L000";
+                        }else if(JX < DX / 8 * 7){
+                            s = s + String.format("R%03d",(int)((JX - (DX / 8 * 5)) / (DX / 4) * 128));
+                        }else{
+                            s = s + "R128";
                         }
-                        s = s + Integer.toString(csum % 10); //１桁目だけを使用する
-
-                        try {
-                            writer.write(s);
-                            writer.flush();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                            MessageBox("データ送信失敗");
+                        //Y
+                        float DY = r.bottom - r.top;
+                        float JY = JoystickY - r.top;
+                        if (JY < DY / 8){
+                            s = s + "U128";
+                        }else if(JY < DY / 8 * 3){
+                            s = s + String.format("U%03d",(int)(128 - (JY - (DY / 8)) / (DY / 4) * 128));
+                        }else if(JY < DY / 8 * 5){
+                            s = s + "U000";
+                        }else if(JY < DY / 8 * 7){
+                            s = s + String.format("D%03d",(int)((JY - (DY / 8 * 5)) / (DY / 4) * 128));
+                        }else{
+                            s = s + "D128";
                         }
-//                    }
-                }else if(nowCommunicating){  //通信中から切り替わったら停止命令を出す
+
+                    } else {
+                        s = s + "L000U000";
+                    }
+
+                    if (nowShooting) {
+                        s = s + "1";
+                    } else {
+                        s = s + "0";
+                    }
+
+                    //チェックsum計算
+                    int csum = 0;
+                    for (int i = 0; i < 8; i++) {
+                        if (i != 3) {
+                            csum = csum + Integer.parseInt(s.substring(i + 4, i + 5));
+                        }
+                    }
+                    s = s + Integer.toString(csum % 10); //１桁目だけを使用する
+
+                    textViewXY.setText(s);
+
                     try {
-                        writer.write("WMS000000000");   //ストップ命令
-                        writer.flush();
-                        writer.write("WMS000000000");   //ストップ命令
+                        writer.write(s);
                         writer.flush();
                     } catch (IOException e) {
                         e.printStackTrace();
-                        MessageBox("データ送信失敗");
+                        tvMessage.setText("データ送信失敗");
+                    }
+//                    }
+                } else if (nowCommunicating) {  //通信中から切り替わったら停止命令を出す
+                    try {
+                        writer.write("WMS0000000000");   //ストップ命令
+                        writer.flush();
+                        writer.write("WMS0000000000");   //ストップ命令
+                        writer.flush();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        tvMessage.setText("データ送信失敗");
                     }
                     nowCommunicating = false;
                 }
             }
         }, 0, 50);
 
-        MessageBox("未接続");
+        tvMessage.setText("未接続");
     }
 
     @Override
-    public boolean onTouchEvent(MotionEvent motionEvent) {
+    public boolean onTouchEvent(MotionEvent me) {
 
-        //info.append("onTouchEvent\n");
-
-        if (JoystickAreaTop == 0) {
-            TextView tv = findViewById(R.id.textJoystickArea);
-            JoystickAreaTop = tv.getTop();
-            JoystickAreaLeft = tv.getLeft();
-            JoystickAreaWidth = tv.getWidth();
-            MessageBox("TOP=" + JoystickAreaTop +" LEFT=" + JoystickAreaLeft +" Width=" + JoystickAreaWidth);
-        }
+        //MessageBox("TOP=" + tvShootingArea.getTop() + " Height=" + tvShootingArea.getHeight() + " LEFT=" + tvShootingArea.getLeft() + " Width=" + tvShootingArea.getWidth());
 
 
-        switch (motionEvent.getActionMasked()) {
+        switch (me.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                info.append("ACTION_DOWN\n");
+            case MotionEvent.ACTION_POINTER_DOWN:
+//                info.append("ACTION_DOWN\n");
+                if (nowJoysticking == false && isitRange(tvJoystickArea, me)) {
+                    nowJoysticking = true;
+                    nowJoystickingID = me.getPointerId(me.getActionIndex());
+                    JoystickX = me.getX(me.getActionIndex());
+                    JoystickY = me.getY(me.getActionIndex());
+                    info.append("ACTION_DOWN JoystickArea\n");
+                }
+                if (nowShooting == false && isitRange(tvShootingArea, me)) {
+                    nowShooting = true;
+                    nowShootingID = me.getPointerId(me.getActionIndex());
+                    info.append("ACTION_DOWN ShootingArea\n");
+                }
 
                 break;
             case MotionEvent.ACTION_UP:
-                info.append("ACTION_UP\n");
+            case MotionEvent.ACTION_POINTER_UP:
+                //info.append("ACTION_UP\n");
+                if (nowJoysticking) {
+                    if (me.findPointerIndex(nowJoystickingID) == me.getActionIndex()) {
+                        info.append("ACTION_UP JoystickArea\n");
+                        nowJoysticking = false;
+                    }
+                }
+                if (nowShooting) {
+                    if (me.findPointerIndex(nowShootingID) == me.getActionIndex()) {
+                        info.append("ACTION_UP ShootingArea\n");
+                        nowShooting = false;
+                    }
+                }
 
                 break;
             case MotionEvent.ACTION_MOVE:
                 //info.append("ACTION_MOVE\n");
-
+                if (nowJoysticking) {
+                    JoystickX = me.getX(me.findPointerIndex(nowJoystickingID));
+                    JoystickY = me.getY(me.findPointerIndex(nowJoystickingID));
+                }
                 break;
-            case MotionEvent.ACTION_POINTER_DOWN:
-                info.append("ACTION_POINTER_DOWN\n");
-
-                break;
-            case MotionEvent.ACTION_POINTER_UP:
-                info.append("ACTION_POINTER_UP\n");
-
-                break;
-            case MotionEvent.ACTION_CANCEL:
-                info.append("ACTION_CANCEL\n");
+            default:
+                info.append(me.getActionMasked() + " default\n");
+                nowJoysticking = false;
+                nowShooting = false;
 
                 break;
         }
-        textViewXY.setText("X=" + motionEvent.getX() +" Y=" + motionEvent.getY());
+
+        if (nowJoysticking || nowShooting) {
+            if (tvMessage.getText().equals("接続中")) {
+                tvMessage.setText("通信中");
+            }
+        } else {
+            if (tvMessage.getText().equals("通信中")) {
+                tvMessage.setText("接続中");
+            }
+        }
+
+//        textViewXY.setText("X=" + me.getX() + " Y=" + me.getY());
+//        textViewXY.setText("X=" + JoystickX + " Y=" + JoystickY);
         textView.setText(info);
-
-
 
         return false;
     }
 
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        info.append(v.getId());
-        info.append(" onTouch\n");
-        textView.setText(info);
+    //モーションイベントの座標がテキストビュー内に入っていたらTrue
+    private boolean isitRange(TextView tv, MotionEvent me) {
+        Rect rect = new Rect();
+        tv.getGlobalVisibleRect(rect);
 
-        TextView tvm = findViewById(R.id.textViewMessage);
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_MOVE:
-                break;
-            case MotionEvent.ACTION_DOWN:
-                if (tvm.getText().equals("接続中")) {
-                    MessageBox("通信中");
-                }
-                break;
-            case MotionEvent.ACTION_UP:
-                if (tvm.getText().equals("通信中")) {
-                    MessageBox("接続中");
-                }
-                break;
+        if (rect.top <= me.getY(me.getActionIndex()) &&
+                rect.bottom >= me.getY(me.getActionIndex()) &&
+                rect.left <= me.getX(me.getActionIndex()) &&
+                rect.right >= me.getX(me.getActionIndex())) {
+            return true;
         }
         return false;
     }
+
 
 
     // アクションバーを表示するメソッド
@@ -225,16 +282,16 @@ public class MainActivity extends AppCompatActivity  implements View.OnTouchList
         switch (item.getItemId()) {
             case R.id.item_connect:    //接続
                 // BTの準備 --------------------------------------------------------------
-                MessageBox("接続準備中");
+                tvMessage.setText("接続準備中");
 
                 // BTアダプタのインスタンスを取得
                 mBtAdapter = BluetoothAdapter.getDefaultAdapter();
                 if (mBtAdapter == null) {
-                    MessageBox("BTアダプタの取得失敗null");
+                    tvMessage.setText("BTアダプタの取得失敗null");
                     return true;
                 }
                 if (!mBtAdapter.isEnabled()) {
-                    MessageBox("Bluetoothが無効になってます");
+                    tvMessage.setText("Bluetoothが無効になってます");
                     return true;
                 }
 
@@ -249,7 +306,7 @@ public class MainActivity extends AppCompatActivity  implements View.OnTouchList
                     }
                 }
                 if (mBtDevice == null) {
-                    MessageBox("デバイスが見つからない(" + BTName + ")");
+                    tvMessage.setText("デバイスが見つからない(" + BTName + ")");
                     return true;
                 }
 
@@ -258,7 +315,7 @@ public class MainActivity extends AppCompatActivity  implements View.OnTouchList
                     // 接続に使用するプロファイルを指定
                     mBtSocket = mBtDevice.createRfcommSocketToServiceRecord(UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"));
                 } catch (IOException e) {
-                    MessageBox("ソケットの取得失敗");
+                    tvMessage.setText("ソケットの取得失敗");
                     e.printStackTrace();
                 }
 
@@ -267,9 +324,9 @@ public class MainActivity extends AppCompatActivity  implements View.OnTouchList
                     mBtSocket.connect();
                     writer = new BufferedWriter(new OutputStreamWriter(mBtSocket.getOutputStream(), "ASCII"));
                     reader = new BufferedReader(new InputStreamReader(mBtSocket.getInputStream(), "ASCII"));
-                    MessageBox("接続中");
+                    tvMessage.setText("接続中");
                 } catch (IOException e) {
-                    MessageBox("デバイスへの接続失敗");
+                    tvMessage.setText("デバイスへの接続失敗");
                     e.printStackTrace();
                 }
 
@@ -277,7 +334,7 @@ public class MainActivity extends AppCompatActivity  implements View.OnTouchList
 
             case R.id.item_disconnect:
                 // ソケットを閉じる
-                MessageBox("未接続");
+                tvMessage.setText("未接続");
                 try {
                     mBtSocket.close();
                 } catch (IOException e) {
@@ -319,12 +376,6 @@ public class MainActivity extends AppCompatActivity  implements View.OnTouchList
 
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    private void MessageBox(String str) {
-        TextView tvm = findViewById(R.id.textViewMessage);
-        tvm.setText(str);
-
     }
 
 
