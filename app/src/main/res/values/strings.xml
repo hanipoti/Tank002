@@ -1,11 +1,7 @@
 <resources>
     <string name="app_name">Tank砲塔制御</string>
 
-    <string name="radioButtonExtends">伸び</string>
-    <string name="radioButtonShrink">縮み</string>
-    <string name="radioButtonStop">停止</string>
-    <string name="radioButtonLR">左右</string>
-    <string name="radioButtonUD">上下</string>
+
 
     <string name="menu_item_BTSelect">BTデバイス選択</string>
     <string name="menu_item_connect">BT接続</string>

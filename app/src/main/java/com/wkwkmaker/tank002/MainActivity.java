@@ -30,7 +30,6 @@ import java.util.TimerTask;
 import java.util.UUID;
 
 
-//public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
 public class MainActivity extends AppCompatActivity {
 
     private BluetoothAdapter mBtAdapter; // BTアダプタ
@@ -52,8 +51,6 @@ public class MainActivity extends AppCompatActivity {
     private float JoystickX = 0;
     private float JoystickY = 0;
 
-    private final StringBuffer info = new StringBuffer("Test onTouchEvent\n\n");
-    private TextView textView;
     private TextView textViewXY;
 
     @Override
@@ -61,14 +58,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textView = findViewById(R.id.tvJoystickArea);
         textViewXY = findViewById(R.id.textView2);
-
-        Button button = findViewById(R.id.button2);
-        button.setOnClickListener(v -> {
-            info.delete(0, info.length());
-            textView.setText(info);
-        });
 
         tvJoystickArea = findViewById(R.id.tvJoystickArea);
         tvShootingArea = findViewById(R.id.tvShootingArea);
@@ -82,10 +72,6 @@ public class MainActivity extends AppCompatActivity {
 
         timerSend = new Timer();
 
-//        Button btn = findViewById(R.id.button);
-//        btn.setOnTouchListener(this);
-//        TextView tv = findViewById(R.id.tvJoystickArea);
-//        tv.setOnTouchListener(this);
 
 
         //タイマーに直接スケジュールを追加して実行
@@ -187,47 +173,39 @@ public class MainActivity extends AppCompatActivity {
         switch (me.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
-//                info.append("ACTION_DOWN\n");
                 if (nowJoysticking == false && isitRange(tvJoystickArea, me)) {
                     nowJoysticking = true;
                     nowJoystickingID = me.getPointerId(me.getActionIndex());
                     JoystickX = me.getX(me.getActionIndex());
                     JoystickY = me.getY(me.getActionIndex());
-                    info.append("ACTION_DOWN JoystickArea\n");
                 }
                 if (nowShooting == false && isitRange(tvShootingArea, me)) {
                     nowShooting = true;
                     nowShootingID = me.getPointerId(me.getActionIndex());
-                    info.append("ACTION_DOWN ShootingArea\n");
                 }
 
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
-                //info.append("ACTION_UP\n");
                 if (nowJoysticking) {
                     if (me.findPointerIndex(nowJoystickingID) == me.getActionIndex()) {
-                        info.append("ACTION_UP JoystickArea\n");
                         nowJoysticking = false;
                     }
                 }
                 if (nowShooting) {
                     if (me.findPointerIndex(nowShootingID) == me.getActionIndex()) {
-                        info.append("ACTION_UP ShootingArea\n");
                         nowShooting = false;
                     }
                 }
 
                 break;
             case MotionEvent.ACTION_MOVE:
-                //info.append("ACTION_MOVE\n");
                 if (nowJoysticking) {
                     JoystickX = me.getX(me.findPointerIndex(nowJoystickingID));
                     JoystickY = me.getY(me.findPointerIndex(nowJoystickingID));
                 }
                 break;
             default:
-                info.append(me.getActionMasked() + " default\n");
                 nowJoysticking = false;
                 nowShooting = false;
 
@@ -244,9 +222,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-//        textViewXY.setText("X=" + me.getX() + " Y=" + me.getY());
-//        textViewXY.setText("X=" + JoystickX + " Y=" + JoystickY);
-        textView.setText(info);
 
         return false;
     }
