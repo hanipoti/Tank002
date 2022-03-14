@@ -58,8 +58,8 @@
         android:id="@+id/textView2"
         android:layout_width="114dp"
         android:layout_height="36dp"
-        app:layout_constraintEnd_toEndOf="@+id/tvJoystickArea"
-        app:layout_constraintTop_toBottomOf="@+id/tvJoystickArea" />
+        app:layout_constraintBottom_toTopOf="@+id/tvJoystickArea"
+        app:layout_constraintEnd_toEndOf="@+id/tvJoystickArea" />
 
     <TextView
         android:id="@+id/textView3"
@@ -89,5 +89,34 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <SeekBar
+        android:id="@+id/seekberAreaMax"
+        android:layout_width="0dp"
+        android:layout_height="57dp"
+        android:max="256"
+        android:min="1"
+        android:progress="256"
+        app:layout_constraintEnd_toEndOf="@+id/tvJoystickArea"
+        app:layout_constraintStart_toEndOf="@+id/textView6"
+        app:layout_constraintTop_toBottomOf="@+id/tvJoystickArea" />
+
+    <TextView
+        android:id="@+id/textView6"
+        android:layout_width="104dp"
+        android:layout_height="19dp"
+        android:text="制御最大値："
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="@+id/tvJoystickArea"
+        app:layout_constraintTop_toBottomOf="@+id/tvJoystickArea" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="55dp"
+        android:layout_height="36dp"
+        android:text="256"
+        android:textSize="20sp"
+        app:layout_constraintEnd_toEndOf="@+id/textView6"
+        app:layout_constraintTop_toBottomOf="@+id/textView6" />
 
 </android.support.constraint.ConstraintLayout>

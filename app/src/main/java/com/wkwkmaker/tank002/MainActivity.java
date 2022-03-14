@@ -13,8 +13,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
-import android.view.View;
-import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
@@ -37,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothSocket mBtSocket; // BTソケット
     private BufferedWriter writer;
     private BufferedReader reader;
+
     private Timer timerSend;
 
     private boolean nowCommunicating = false; //通信中か？
@@ -44,25 +44,28 @@ public class MainActivity extends AppCompatActivity {
     private int nowJoystickingID = 0;
     private boolean nowShooting = false; //発射操作中か？
     private int nowShootingID = 0;
+
     private TextView tvJoystickArea;
     private TextView tvShootingArea;
     private TextView tvMessage;
+    private SeekBar sbAreaMax;
+
+    private TextView textViewXY;
 
     private float JoystickX = 0;
     private float JoystickY = 0;
-
-    private TextView textViewXY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        textViewXY = findViewById(R.id.textView2);
-
         tvJoystickArea = findViewById(R.id.tvJoystickArea);
         tvShootingArea = findViewById(R.id.tvShootingArea);
         tvMessage = findViewById(R.id.textViewMessage);
+        sbAreaMax = findViewById(R.id.seekberAreaMax);
+
+        textViewXY = findViewById(R.id.textView2);
 
 
         //プリファレンスから前回のBluetooth接続先をセットする
@@ -70,10 +73,20 @@ public class MainActivity extends AppCompatActivity {
         TextView tvc = findViewById(R.id.textViewConnectBTName);
         tvc.setText(pref.getString("selectedBTName", ""));
 
+
+        //シークバーのイベント定義
+        sbAreaMax.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar seekBar,int progress, boolean fromUser) {
+                //シークバーが変更されたらテキストボックスに数値を表示する
+                TextView tv = findViewById(R.id.textView4);
+                tv.setText(String.valueOf(progress));
+            }
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+
+
         timerSend = new Timer();
-
-
-
         //タイマーに直接スケジュールを追加して実行
         timerSend.schedule(new TimerTask() {
             @Override
@@ -88,36 +101,42 @@ public class MainActivity extends AppCompatActivity {
                         Rect r = new Rect();
                         tvJoystickArea.getGlobalVisibleRect(r);
 
+                        //操作エリアを８分割し、外周１は最大、中央の２は操作無効、その間がリニアに遷移する
+
+                        //操作範囲の最大値
+                        int areaMax = sbAreaMax.getProgress();
+
                         //X
-                        float DX = r.right - r.left;
-                        float JX = JoystickX - r.left;
+                        float DX = r.right - r.left;   //エリアのサイズ
+                        float JX = JoystickX - r.left; //ポイントの位置
                         if (JX < DX / 8){
-                            s = s + "L128";
+                            s = s + "L" + String.format("%03d",areaMax);
                         }else if(JX < DX / 8 * 3){
-                            s = s + String.format("L%03d",(int)(128 - (JX - (DX / 8)) / (DX / 4) * 128));
+                            s = s + "L" + String.format("%03d",(int)(areaMax - (JX - (DX / 8)) / (DX / 4) * areaMax));
                         }else if(JX < DX / 8 * 5){
                             s = s + "L000";
                         }else if(JX < DX / 8 * 7){
-                            s = s + String.format("R%03d",(int)((JX - (DX / 8 * 5)) / (DX / 4) * 128));
+                            s = s + "R" + String.format("%03d",(int)((JX - (DX / 8 * 5)) / (DX / 4) * areaMax));
                         }else{
-                            s = s + "R128";
+                            s = s + "R" + String.format("%03d",areaMax);
                         }
                         //Y
                         float DY = r.bottom - r.top;
                         float JY = JoystickY - r.top;
                         if (JY < DY / 8){
-                            s = s + "U128";
+                            s = s + "U" + String.format("%03d",areaMax);
                         }else if(JY < DY / 8 * 3){
-                            s = s + String.format("U%03d",(int)(128 - (JY - (DY / 8)) / (DY / 4) * 128));
+                            s = s + "U" + String.format("%03d",(int)(areaMax - (JY - (DY / 8)) / (DY / 4) * areaMax));
                         }else if(JY < DY / 8 * 5){
                             s = s + "U000";
                         }else if(JY < DY / 8 * 7){
-                            s = s + String.format("D%03d",(int)((JY - (DY / 8 * 5)) / (DY / 4) * 128));
+                            s = s + "D" + String.format("%03d",(int)((JY - (DY / 8 * 5)) / (DY / 4) * areaMax));
                         }else{
-                            s = s + "D128";
+                            s = s + "D" + String.format("%03d",areaMax);
                         }
 
                     } else {
+                        //ジョイスティック操作がされていない場合
                         s = s + "L000U000";
                     }
 
@@ -163,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
 
         tvMessage.setText("未接続");
     }
+
 
     @Override
     public boolean onTouchEvent(MotionEvent me) {
